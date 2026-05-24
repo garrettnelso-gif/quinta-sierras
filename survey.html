@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quinta Sierras — Guest Survey</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --paper: #f5f0e8; --ink: #1a1a18; --muted: #7a7468; --gold: #c8a96e; --sage: #3d5a3e; --line: rgba(26,26,24,0.12); --white: #ffffff; --dark-hero: #0c120d; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Jost', sans-serif; font-weight: 300; background: var(--paper); color: var(--ink); min-height: 100vh; }
+    .lang-hidden { display: none !important; }
+    .hero { position: relative; height: 70vh; min-height: 420px; max-height: 620px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 0 24px 52px; text-align: center; overflow: hidden; }
+    .hero-photo { position: absolute; inset: 0; background: url('https://garrettnelso-gif.github.io/quinta-sierras/pool-view.jpg') center center / cover no-repeat; }
+    .hero-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(8,12,8,0.92) 0%, rgba(8,12,8,0.45) 45%, rgba(8,12,8,0.1) 100%); }
+    .hero-content { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+    .hero-eyebrow { font-family: 'Jost', sans-serif; font-weight: 400; font-size: 10px; letter-spacing: 5px; text-transform: uppercase; color: var(--gold); }
+    .hero h1 { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: clamp(42px, 10vw, 78px); line-height: 1.05; color: var(--white); }
+    .hero h1 em { font-style: italic; color: rgba(255,255,255,0.75); }
+    .hero-sub { font-family: 'Jost', sans-serif; font-weight: 300; font-size: 13px; letter-spacing: 1px; color: rgba(255,255,255,0.55); }
+    .lang-toggle { display: flex; border: 1px solid rgba(255,255,255,0.25); border-radius: 100px; overflow: hidden; }
+    .lang-toggle button { background: transparent; border: none; color: rgba(255,255,255,0.5); font-family: 'Jost', sans-serif; font-size: 11px; letter-spacing: 2px; padding: 7px 20px; cursor: pointer; transition: all 0.2s; }
+    .lang-toggle button.active { background: var(--gold); color: var(--dark-hero); }
+    .form-wrap { max-width: 640px; margin: 0 auto; padding: 56px 24px 80px; }
+    .ornament { text-align: center; font-size: 13px; color: var(--gold); letter-spacing: 8px; margin: 48px 0; }
+    .section { margin-bottom: 52px; }
+    .section-header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+    .section-number { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 13px; letter-spacing: 2px; color: var(--gold); }
+    .section-title { font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 22px; color: var(--ink); }
+    .question { margin-bottom: 32px; }
+    .question:last-child { margin-bottom: 0; }
+    .q-label { display: block; font-family: 'Jost', sans-serif; font-weight: 300; font-size: 14px; line-height: 1.6; color: var(--ink); margin-bottom: 14px; }
+    .q-label em { color: var(--muted); font-style: normal; font-size: 12px; }
+    .q-rule { border: none; border-top: 1px solid var(--line); margin: 28px 0; }
+    .stars { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 4px; }
+    .stars input { display: none; }
+    .stars label { font-size: 28px; cursor: pointer; color: rgba(200,169,110,0.25); transition: color 0.15s; line-height: 1; margin-bottom: 0; }
+    .stars input:checked ~ label, .stars label:hover, .stars label:hover ~ label { color: var(--gold); }
+    .amenity-list { display: flex; flex-direction: column; gap: 18px; }
+    .amenity-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .amenity-label { font-family: 'Jost', sans-serif; font-weight: 300; font-size: 13px; letter-spacing: 0.5px; color: var(--ink); text-transform: uppercase; }
+    textarea, input[type="text"] { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--line); padding: 10px 0; font-family: 'Jost', sans-serif; font-weight: 300; font-size: 14px; color: var(--ink); resize: none; line-height: 1.6; }
+    textarea { min-height: 80px; }
+    textarea:focus, input[type="text"]:focus { outline: none; border-bottom-color: var(--gold); }
+    textarea::placeholder, input[type="text"]::placeholder { color: rgba(122,116,104,0.5); font-style: italic; }
+    .choice-group { display: flex; flex-direction: column; gap: 12px; }
+    .choice-group label { display: flex; align-items: center; gap: 12px; font-family: 'Jost', sans-serif; font-weight: 300; font-size: 14px; cursor: pointer; color: var(--ink); }
+    .choice-group input[type="radio"] { appearance: none; width: 16px; height: 16px; border: 1px solid var(--gold); border-radius: 50%; flex-shrink: 0; cursor: pointer; transition: all 0.15s; }
+    .choice-group input[type="radio"]:checked { background: var(--gold); box-shadow: inset 0 0 0 3px var(--paper); }
+    .nps-wrap { overflow-x: auto; }
+    .nps-scale { display: flex; gap: 6px; min-width: max-content; }
+    .nps-scale input { display: none; }
+    .nps-scale label { width: 38px; height: 38px; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-family: 'Jost', sans-serif; font-weight: 300; font-size: 13px; cursor: pointer; transition: all 0.15s; color: var(--muted); }
+    .nps-scale input:checked + label { background: var(--gold); border-color: var(--gold); color: var(--dark-hero); font-weight: 500; }
+    .nps-scale label:hover { border-color: var(--gold); color: var(--gold); }
+    .submit-wrap { text-align: center; padding-top: 8px; }
+    .submit-btn { background: transparent; border: 1px solid var(--gold); color: var(--ink); font-family: 'Jost', sans-serif; font-weight: 400; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; padding: 16px 48px; cursor: pointer; transition: all 0.25s; }
+    .submit-btn:hover { background: var(--gold); color: var(--dark-hero); }
+    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .form-error { display: none; text-align: center; color: #a33; font-size: 12px; margin-top: 14px; }
+    #thank-you { display: none; text-align: center; padding: 80px 24px; max-width: 480px; margin: 0 auto; }
+    #thank-you .orn { font-size: 11px; letter-spacing: 6px; color: var(--gold); margin-bottom: 24px; }
+    #thank-you h2 { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 42px; color: var(--sage); margin-bottom: 16px; }
+    #thank-you p { font-family: 'Jost', sans-serif; font-weight: 300; font-size: 14px; color: var(--muted); line-height: 1.7; }
+    @media (max-width: 480px) { .form-wrap { padding: 40px 20px 60px; } .hero { min-height: 360px; } }
+  </style>
+</head>
+<body>
+<div class="hero">
+  <div class="hero-photo"></div>
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">Quinta Sierras</div>
+    <h1 data-lang="en">How was<br><em>your stay?</em></h1>
+    <h1 data-lang="es">¿Cómo fue<br><em>tu estancia?</em></h1>
+    <div class="hero-sub" data-lang="en">Your feedback stays with us — and helps us improve.</div>
+    <div class="hero-sub" data-lang="es">Tus comentarios quedan entre nosotros — y nos ayudan a mejorar.</div>
+    <div class="lang-toggle">
+      <button id="btn-en" onclick="setLang('en')">EN</button>
+      <button id="btn-es" onclick="setLang('es')">ES</button>
+    </div>
+  </div>
+</div>
+<div class="form-wrap">
+  <form id="survey-form">
+    <div class="section">
+      <div class="section-header"><span class="section-number">01</span><span class="section-title" data-lang="en">Overall Experience</span><span class="section-title" data-lang="es">Experiencia General</span></div>
+      <div class="question">
+        <label class="q-label" data-lang="en">How would you rate your stay overall?</label>
+        <label class="q-label" data-lang="es">¿Cómo calificarías tu estancia en general?</label>
+        <div class="stars"><input type="radio" name="overall" id="s5" value="5"><label for="s5">★</label><input type="radio" name="overall" id="s4" value="4"><label for="s4">★</label><input type="radio" name="overall" id="s3" value="3"><label for="s3">★</label><input type="radio" name="overall" id="s2" value="2"><label for="s2">★</label><input type="radio" name="overall" id="s1" value="1"><label for="s1">★</label></div>
+      </div>
+      <hr class="q-rule" />
+      <div class="question">
+        <label class="q-label" data-lang="en">What was the highlight of your stay?</label>
+        <label class="q-label" data-lang="es">¿Cuál fue lo mejor de tu estancia?</label>
+        <textarea name="highlight" data-lang="en" placeholder="Tell us what you loved most…"></textarea>
+        <textarea name="highlight_es" data-lang="es" placeholder="Cuéntanos qué fue lo que más te gustó…"></textarea>
+      </div>
+    </div>
+    <div class="ornament">✦</div>
+    <div class="section">
+      <div class="section-header"><span class="section-number">02</span><span class="section-title" data-lang="en">Amenities</span><span class="section-title" data-lang="es">Instalaciones</span></div>
+      <div class="question">
+        <label class="q-label" data-lang="en">How would you rate these areas?</label>
+        <label class="q-label" data-lang="es">¿Cómo calificarías estas áreas?</label>
+        <div class="amenity-list">
+          <div class="amenity-row"><span class="amenity-label" data-lang="en">Cleanliness</span><span class="amenity-label" data-lang="es">Limpieza</span><div class="stars"><input type="radio" name="clean" id="c5" value="5"><label for="c5">★</label><input type="radio" name="clean" id="c4" value="4"><label for="c4">★</label><input type="radio" name="clean" id="c3" value="3"><label for="c3">★</label><input type="radio" name="clean" id="c2" value="2"><label for="c2">★</label><input type="radio" name="clean" id="c1" value="1"><label for="c1">★</label></div></div>
+          <div class="amenity-row"><span class="amenity-label" data-lang="en">Beds &amp; comfort</span><span class="amenity-label" data-lang="es">Camas y comodidad</span><div class="stars"><input type="radio" name="beds" id="b5" value="5"><label for="b5">★</label><input type="radio" name="beds" id="b4" value="4"><label for="b4">★</label><input type="radio" name="beds" id="b3" value="3"><label for="b3">★</label><input type="radio" name="beds" id="b2" value="2"><label for="b2">★</label><input type="radio" name="beds" id="b1" value="1"><label for="b1">★</label></div></div>
+          <div class="amenity-row"><span class="amenity-label" data-lang="en">Kitchen</span><span class="amenity-label" data-lang="es">Cocina</span><div class="stars"><input type="radio" name="kitchen" id="k5" value="5"><label for="k5">★</label><input type="radio" name="kitchen" id="k4" value="4"><label for="k4">★</label><input type="radio" name="kitchen" id="k3" value="3"><label for="k3">★</label><input type="radio" name="kitchen" id="k2" value="2"><label for="k2">★</label><input type="radio" name="kitchen" id="k1" value="1"><label for="k1">★</label></div></div>
+          <div class="amenity-row"><span class="amenity-label" data-lang="en">Pool &amp; outdoors</span><span class="amenity-label" data-lang="es">Pileta y exteriores</span><div class="stars"><input type="radio" name="outdoor" id="o5" value="5"><label for="o5">★</label><input type="radio" name="outdoor" id="o4" value="4"><label for="o4">★</label><input type="radio" name="outdoor" id="o3" value="3"><label for="o3">★</label><input type="radio" name="outdoor" id="o2" value="2"><label for="o2">★</label><input type="radio" name="outdoor" id="o1" value="1"><label for="o1">★</label></div></div>
+          <div class="amenity-row"><span class="amenity-label" data-lang="en">Wi-Fi</span><span class="amenity-label" data-lang="es">Wi-Fi</span><div class="stars"><input type="radio" name="wifi" id="w5" value="5"><label for="w5">★</label><input type="radio" name="wifi" id="w4" value="4"><label for="w4">★</label><input type="radio" name="wifi" id="w3" value="3"><label for="w3">★</label><input type="radio" name="wifi" id="w2" value="2"><label for="w2">★</label><input type="radio" name="wifi" id="w1" value="1"><label for="w1">★</label></div></div>
+        </div>
+      </div>
+      <hr class="q-rule" />
+      <div class="question">
+        <label class="q-label" data-lang="en">Anything about the property we could improve?</label>
+        <label class="q-label" data-lang="es">¿Hay algo de la propiedad que podríamos mejorar?</label>
+        <textarea name="amenity_improve" data-lang="en" placeholder="Any detail, big or small…"></textarea>
+        <textarea name="amenity_improve_es" data-lang="es" placeholder="Cualquier detalle, grande o pequeño…"></textarea>
+      </div>
+    </div>
+    <div class="ornament">✦</div>
+    <div class="section">
+      <div class="section-header"><span class="section-number">03</span><span class="section-title" data-lang="en">Would You Return?</span><span class="section-title" data-lang="es">¿Volverías?</span></div>
+      <div class="question">
+        <label class="q-label" data-lang="en">How likely are you to return to Quinta Sierras?</label>
+        <label class="q-label" data-lang="es">¿Qué tan probable es que regreses a Quinta Sierras?</label>
+        <div class="choice-group" data-lang="en">
+          <label><input type="radio" name="return" value="definitely"> Definitely — already planning it</label>
+          <label><input type="radio" name="return" value="likely"> Very likely</label>
+          <label><input type="radio" name="return" value="maybe"> Maybe, depending on the occasion</label>
+          <label><input type="radio" name="return" value="unlikely"> Probably not</label>
+        </div>
+        <div class="choice-group" data-lang="es">
+          <label><input type="radio" name="return_es" value="definitely"> Definitivamente — ya lo estoy planeando</label>
+          <label><input type="radio" name="return_es" value="likely"> Muy probable</label>
+          <label><input type="radio" name="return_es" value="maybe"> Quizás, dependiendo de la ocasión</label>
+          <label><input type="radio" name="return_es" value="unlikely"> Probablemente no</label>
+        </div>
+      </div>
+      <hr class="q-rule" />
+      <div class="question">
+        <label class="q-label" data-lang="en">How likely are you to recommend Quinta Sierras to a friend? <em>(0 = not at all · 10 = absolutely)</em></label>
+        <label class="q-label" data-lang="es">¿Qué tan probable es que recomiendes Quinta Sierras a un amigo? <em>(0 = nada · 10 = con toda seguridad)</em></label>
+        <div class="nps-wrap"><div class="nps-scale">
+          <input type="radio" name="nps" id="n0" value="0"><label for="n0">0</label>
+          <input type="radio" name="nps" id="n1" value="1"><label for="n1">1</label>
+          <input type="radio" name="nps" id="n2" value="2"><label for="n2">2</label>
+          <input type="radio" name="nps" id="n3" value="3"><label for="n3">3</label>
+          <input type="radio" name="nps" id="n4" value="4"><label for="n4">4</label>
+          <input type="radio" name="nps" id="n5" value="5"><label for="n5">5</label>
+          <input type="radio" name="nps" id="n6" value="6"><label for="n6">6</label>
+          <input type="radio" name="nps" id="n7" value="7"><label for="n7">7</label>
+          <input type="radio" name="nps" id="n8" value="8"><label for="n8">8</label>
+          <input type="radio" name="nps" id="n9" value="9"><label for="n9">9</label>
+          <input type="radio" name="nps" id="n10" value="10"><label for="n10">10</label>
+        </div></div>
+      </div>
+    </div>
+    <div class="ornament">✦</div>
+    <div class="section">
+      <div class="section-header"><span class="section-number">04</span><span class="section-title" data-lang="en">Anything on Your Mind?</span><span class="section-title" data-lang="es">¿Algo en Tu Mente?</span></div>
+      <div class="question">
+        <label class="q-label" data-lang="en">Did anything fall short of your expectations? We genuinely want to know — this stays between us.</label>
+        <label class="q-label" data-lang="es">¿Hubo algo que no cumplió tus expectativas? Queremos saber de verdad — esto queda entre nosotros.</label>
+        <textarea name="issues" data-lang="en" style="min-height:100px;" placeholder="Nothing is too small to mention…"></textarea>
+        <textarea name="issues_es" data-lang="es" style="min-height:100px;" placeholder="Nada es demasiado pequeño para mencionar…"></textarea>
+      </div>
+      <hr class="q-rule" />
+      <div class="question">
+        <label class="q-label" data-lang="en">Any other thoughts, suggestions, or memories?</label>
+        <label class="q-label" data-lang="es">¿Algún otro pensamiento, sugerencia o recuerdo?</label>
+        <textarea name="other" data-lang="en" placeholder="We'd love to hear anything…"></textarea>
+        <textarea name="other_es" data-lang="es" placeholder="Nos encantaría escuchar cualquier cosa…"></textarea>
+      </div>
+      <hr class="q-rule" />
+      <div class="question">
+        <label class="q-label" data-lang="en">Your name <em>(optional)</em></label>
+        <label class="q-label" data-lang="es">Tu nombre <em>(opcional)</em></label>
+        <input type="text" name="guest_name" />
+      </div>
+    </div>
+    <div class="submit-wrap">
+      <button type="button" class="submit-btn" data-lang="en" onclick="submitForm()">Send Feedback</button>
+      <button type="button" class="submit-btn" data-lang="es" onclick="submitForm()">Enviar Comentarios</button>
+      <div class="form-error" id="form-error">Something went wrong. Please try again.</div>
+    </div>
+  </form>
+  <div id="thank-you">
+    <div class="orn">✦</div>
+    <h2 data-lang="en">Thank you.</h2>
+    <h2 data-lang="es">Gracias.</h2>
+    <p data-lang="en">Your feedback means a great deal to us.<br>We hope Quinta Sierras was a place to truly rest — and that we'll welcome you back soon.</p>
+    <p data-lang="es">Tus comentarios significan mucho para nosotros.<br>Esperamos que Quinta Sierras haya sido un lugar para descansar de verdad — y que vuelvas pronto.</p>
+  </div>
+</div>
+<script>
+  function setLang(lang) {
+    document.querySelectorAll('[data-lang]').forEach(el => {
+      el.classList.toggle('lang-hidden', el.getAttribute('data-lang') !== lang);
+    });
+    document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    document.getElementById('btn-es').classList.toggle('active', lang === 'es');
+  }
+  document.addEventListener('DOMContentLoaded', () => setLang('en'));
+  const FORMSPREE_ID = 'mdajdbka';
+  async function submitForm() {
+    const form = document.getElementById('survey-form');
+    const btns = form.querySelectorAll('.submit-btn');
+    const errorEl = document.getElementById('form-error');
+    btns.forEach(b => b.disabled = true);
+    errorEl.style.display = 'none';
+    try {
+      const res = await fetch('https://formspree.io/f/' + FORMSPREE_ID, { method: 'POST', body: new FormData(form), headers: { 'Accept': 'application/json' } });
+      if (res.ok) { showThankYou(); } else { throw new Error(); }
+    } catch { errorEl.style.display = 'block'; btns.forEach(b => b.disabled = false); }
+  }
+  function showThankYou() {
+    document.getElementById('survey-form').style.display = 'none';
+    document.getElementById('thank-you').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setLang(document.getElementById('btn-en').classList.contains('active') ? 'en' : 'es');
+  }
+</script>
+</body>
+</html>
