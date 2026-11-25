@@ -629,6 +629,14 @@
 </head>
 <body>
 
+<!-- LANGUAGE TOGGLE -->
+<div id="lang-toggle" style="position:fixed;top:18px;right:22px;z-index:2000;display:flex;gap:0;border:1px solid rgba(200,169,110,0.4);overflow:hidden;backdrop-filter:blur(4px);">
+  <button onclick="setLang('en')" id="btn-en" style="padding:8px 16px;font-family:Jost,sans-serif;font-size:10px;font-weight:400;letter-spacing:0.25em;border:none;cursor:pointer;background:#c8a96e;color:#1a1a18;transition:all 0.25s;">EN</button>
+  <button onclick="setLang('es')" id="btn-es" style="padding:8px 16px;font-family:Jost,sans-serif;font-size:10px;font-weight:400;letter-spacing:0.25em;border:none;cursor:pointer;background:rgba(26,26,18,0.85);color:rgba(245,240,232,0.5);transition:all 0.25s;">ES</button>
+</div>
+
+<div id="lang-en">
+
 <!-- NAV DOTS -->
 <nav class="nav-dots" aria-hidden="true">
   <button class="nav-dot active" onclick="scrollToSection(0)"></button>
@@ -1176,10 +1184,55 @@
   }, { threshold: 0.1 });
   sections.forEach(s => observer.observe(s));
 
-  // Nav dot scroll
-  const sectionIds = ['section-0','section-1','section-2','section-3','section-4','section-5','section-6','section-7'];
+  // Language toggle
+  var currentLang = 'en';
+  var esMapsInited = false;
+
+  function setLang(lang) {
+    currentLang = lang;
+    document.getElementById('lang-en').style.display = lang === 'en' ? '' : 'none';
+    document.getElementById('lang-es').style.display = lang === 'es' ? '' : 'none';
+    var btnEn = document.getElementById('btn-en');
+    var btnEs = document.getElementById('btn-es');
+    btnEn.style.background = lang === 'en' ? '#c8a96e' : 'rgba(26,26,18,0.85)';
+    btnEn.style.color     = lang === 'en' ? '#1a1a18' : 'rgba(245,240,232,0.5)';
+    btnEs.style.background = lang === 'es' ? '#c8a96e' : 'rgba(26,26,18,0.85)';
+    btnEs.style.color     = lang === 'es' ? '#1a1a18' : 'rgba(245,240,232,0.5)';
+    if (lang === 'es' && !esMapsInited) { esMapsInited = true; setTimeout(initEsMap, 150); }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function initEsMap() {
+    var c = document.getElementById('route-map-es');
+    if (!c || c._leaflet_id) return;
+    var esMap = L.map('route-map-es', { center: [-31.480, -64.443], zoom: 13, zoomControl: true, scrollWheelZoom: false });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', maxZoom: 19 }).addTo(esMap);
+    function mkIcon(col, n) { return L.divIcon({ className: '', html: '<div style="width:28px;height:28px;border-radius:50%;background:'+col+';border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-family:Jost,sans-serif;font-size:11px;color:white;">'+n+'</div>', iconSize:[28,28], iconAnchor:[14,14], popupAnchor:[0,-16] }); }
+    var wps = [
+      { lat:-31.464961, lng:-64.426740, label:'Shell &amp; De Compras', note:'Nafta, supermercado, panadería, deli, farmacia.', num:'1', color:'#c8a96e' },
+      { lat:-31.495321, lng:-64.439902, label:'Doblar en Ruta C45', note:'Doblá aquí saliendo de Ruta C45.', num:'2', color:'#c8a96e' },
+      { lat:-31.490955, lng:-64.442924, label:'Doblar al barrio', note:'Tomá esta izquierda hacia la entrada del barrio.', num:'3', color:'#c8a96e' },
+      { lat:-31.490671, lng:-64.453099, label:'Entrada Paso de Piedra', note:'El arco de piedra — pasá de largo, no tiene portón.', num:'4', color:'#c8a96e' },
+      { lat:-31.488448, lng:-64.453130, label:'Portón Automático', note:'Abrilo con Google Home ("Neighborhood Gate") o el control negro.', num:'5', color:'#c8a96e' },
+      { lat:-31.487111, lng:-64.459611, label:'Quinta Sierras', note:'Seguí subiendo — no dobles a la izquierda. Portón de madera carbonizada.', num:'6', color:'#3d5a3e' }
+    ];
+    wps.forEach(function(wp) {
+      L.marker([wp.lat,wp.lng],{icon:mkIcon(wp.color,wp.num)}).addTo(esMap)
+       .bindPopup('<strong style="font-family:Cormorant Garamond,serif;font-size:15px;">'+wp.label+'</strong><br><span style="font-size:12px;color:#7a7468;font-family:Jost,sans-serif;">'+wp.note+'</span>',{maxWidth:220});
+    });
+    var rc=[],dot=null,step=0,going=false;
+    var url='https://router.project-osrm.org/route/v1/driving/'+wps.map(function(w){return w.lng+','+w.lat;}).join(';')+'?overview=full&geometries=geojson';
+    function anim(){if(!dot||rc.length===0)return;dot.setLatLng(rc[step]);step++;if(step<rc.length){setTimeout(anim,25);}else{step=0;setTimeout(anim,1800);}}
+    function start(){if(!going&&dot){going=true;step=0;setTimeout(anim,600);}}
+    fetch(url).then(function(r){return r.json();}).then(function(d){var g=d.routes[0].geometry;L.geoJSON(g,{style:{color:'#c8a96e',weight:3.5,opacity:0.9,dashArray:'7,9'}}).addTo(esMap);esMap.fitBounds(L.geoJSON(g).getBounds(),{padding:[36,36]});rc=g.coordinates.map(function(c){return[c[1],c[0]];});dot=L.circleMarker(rc[0],{radius:7,fillColor:'#3d5a3e',color:'white',weight:2,fillOpacity:1}).addTo(esMap);start();}).catch(function(){var pts=wps.map(function(w){return[w.lat,w.lng];});L.polyline(pts,{color:'#c8a96e',weight:3,opacity:0.85,dashArray:'6,8'}).addTo(esMap);rc=pts;dot=L.circleMarker(rc[0],{radius:7,fillColor:'#3d5a3e',color:'white',weight:2,fillOpacity:1}).addTo(esMap);start();});
+  }
+
+  // Nav dot scroll — language-aware
+  var enIds = ['section-0','section-1','section-map','section-2','section-3','section-4','section-5','section-6','section-7'];
+  var esIds = ['es-section-0','es-section-1','es-section-map','es-section-2','es-section-3','es-section-4','es-section-5','es-section-6','es-section-7'];
   function scrollToSection(i) {
-    document.getElementById(sectionIds[i])?.scrollIntoView({ behavior: 'smooth' });
+    var ids = currentLang === 'es' ? esIds : enIds;
+    document.getElementById(ids[i])?.scrollIntoView({ behavior: 'smooth' });
   }
 
   // Active dot highlight on scroll
@@ -1196,6 +1249,318 @@
     });
   });
 </script>
+
+</div><!-- /lang-en -->
+
+<!-- ═══════════════════════════════ SPANISH VERSION ═══════════════════════════════ -->
+<div id="lang-es" style="display:none;">
+
+<!-- NAV DOTS ES -->
+<nav class="nav-dots" aria-hidden="true">
+  <button class="nav-dot active" onclick="scrollToSection(0)"></button>
+  <button class="nav-dot" onclick="scrollToSection(1)"></button>
+  <button class="nav-dot" onclick="scrollToSection(2)"></button>
+  <button class="nav-dot" onclick="scrollToSection(3)"></button>
+  <button class="nav-dot" onclick="scrollToSection(4)"></button>
+  <button class="nav-dot" onclick="scrollToSection(5)"></button>
+  <button class="nav-dot" onclick="scrollToSection(6)"></button>
+  <button class="nav-dot" onclick="scrollToSection(7)"></button>
+</nav>
+
+<!-- HERO ES -->
+<section class="hero" id="es-section-0">
+  <div class="hero-photo"></div>
+  <div class="hero-overlay"></div>
+  <div class="hero-top-rule"></div>
+  <p class="hero-eyebrow">Barrio Paso de Piedra · Córdoba, Argentina</p>
+  <h1 class="hero-title">Quinta<br><em>Sierras</em></h1>
+  <div class="hero-rule"></div>
+  <p class="hero-subtitle">Guía de Llegada para Huéspedes</p>
+  <p class="hero-scroll"><span></span>Deslizá para comenzar</p>
+</section>
+
+<main class="content">
+
+  <!-- GALLERY ES -->
+  <div class="gallery">
+    <div class="gallery-item"><img src="house-overview.jpg" alt="Quinta Sierras"></div>
+    <div class="gallery-item"><img src="interior-view.jpg" alt="Interior"></div>
+    <div class="gallery-item"><img src="quincho.jpg" alt="Quincho"></div>
+    <div class="gallery-item"><img src="pool-umbrella.jpg" alt="Pileta"></div>
+  </div>
+
+  <!-- INTRO ES -->
+  <div class="intro-blurb">
+    <h2>Bienvenidos a<br><em>Quinta Sierras</em></h2>
+    <p>Ubicada en una colina en el Barrio Paso de Piedra, Quinta Sierras es un refugio privado rodeado de monte nativo con vistas panorámicas a la llanura cordobesa. Aquí encontrás todo lo que necesitás para llegar, instalarte y disfrutar al máximo tu estadía.</p>
+  </div>
+
+  <!-- CÓMO LLEGAR -->
+  <section class="section" id="es-section-1">
+    <div class="section-header">
+      <span class="section-number">01</span>
+      <h2 class="section-title">Cómo Llegar</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-left"><div class="step-dot"></div><div class="step-line"></div></div>
+        <div class="step-body">
+          <p class="step-label">Entrada al Barrio — Paso de Piedra</p>
+          <p class="step-text">Primero llegás al <strong>arco de piedra</strong> de la entrada al Barrio Paso de Piedra. Pasá de largo — no tiene portón.</p>
+          <div class="gate-img-container"><img src="entrance-arch.jpg" alt="Entrada Paso de Piedra" onerror="this.parentElement.style.display='none'"><p class="img-caption">La entrada de Paso de Piedra — pasá de largo</p></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-dot"></div><div class="step-line"></div></div>
+        <div class="step-body">
+          <p class="step-label">La Avenida de Árboles</p>
+          <p class="step-text">Continuá por el hermoso camino arbolado. El portón automático está más adelante.</p>
+          <div class="gate-img-container"><img src="tree-allee.jpg" alt="Camino arbolado" onerror="this.parentElement.style.display='none'"><p class="img-caption">Seguí el camino entre los árboles</p></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-dot"></div><div class="step-line"></div></div>
+        <div class="step-body">
+          <p class="step-label">Portón Automático del Barrio</p>
+          <p class="step-text">
+            Más adelante vas a llegar al <strong>portón automático</strong> del barrio.<br><br>
+            <a href="https://maps.app.goo.gl/1AdkkM4cNp7UU3UN9" target="_blank" class="map-link">📍 Ubicación del portón en Maps</a><br><br>
+            Abrilo con la <strong>app Google Home</strong> — el dispositivo se llama <em>"Neighborhood Gate"</em> — o usá el <strong>control negro</strong> de dentro de la casa.<br><br>
+            Para recibir la invitación a Google Home, mandanos tu dirección de Gmail:
+            <br><br>
+            <a href="https://wa.me/543518749830?text=Hola!%20Mi%20Gmail%20para%20la%20invitaci%C3%B3n%20a%20Google%20Home%20es%3A%20" target="_blank" class="whatsapp-btn" style="font-size:13px; padding:10px 18px;">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              Envianos tu Gmail por WhatsApp
+            </a>
+          </p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-dot"></div><div class="step-line"></div></div>
+        <div class="step-body">
+          <p class="step-label">Camino a la Casa</p>
+          <p class="step-text">Al pasar el portón, <strong>seguí derecho — no dobles a la izquierda.</strong><br>El camino sube en curva. Seguí subiendo y encontrás la casa a la <strong>izquierda</strong>.</p>
+          <div class="callout"><strong>⚠️ Importante</strong>No dobles a la izquierda en la bifurcación — seguí recto y la calle curva hacia arriba.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-dot"></div><div class="step-line"></div></div>
+        <div class="step-body">
+          <p class="step-label">Portón de la Casa — Madera Carbonizada</p>
+          <p class="step-text">Buscá el <strong>portón de madera carbonizada</strong> a la izquierda. Es manual — <strong>deslizalo hacia la izquierda</strong>. No te olvides de cerrarlo.</p>
+          <div class="gate-img-container"><img src="gate-straight.jpg" alt="Portón de madera carbonizada" onerror="this.parentElement.style.display='none'"><p class="img-caption">El portón de madera carbonizada — deslizá hacia la izquierda</p></div>
+          <p class="step-text"><a href="https://maps.app.goo.gl/kco8eqo1hKG2LmR59" target="_blank" class="map-link">📍 Ubicación de la casa en Maps</a></p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-dot"></div><div class="step-line"></div></div>
+        <div class="step-body">
+          <p class="step-label">Estacionamiento y Entrada</p>
+          <p class="step-text">El <strong>garaje</strong> está al fondo — para dos autos.<br><br>Las <strong>puertas del quincho están abiertas</strong>. Las <strong>llaves de la casa</strong> están dentro de la <strong>parrilla a gas</strong> — abrí la tapa.</p>
+          <div class="gate-img-container"><img src="1773937509210.jpg" alt="Parrilla a gas" onerror="this.parentElement.style.display='none'"><p class="img-caption">La parrilla a gas — abrí la tapa para encontrar las llaves</p></div>
+          <p class="step-text">Dentro de la casa vas a encontrar <strong>dos controles</strong>:<br><br>🟠 <strong>Control naranja</strong> — portón de la casa<br>⚫ <strong>Control negro</strong> — portón del barrio (alternativa a Google Home)</p>
+          <div class="gate-img-container"><img src="IMG-20260114-WA0027.jpg" alt="Controles de los portones" onerror="this.parentElement.style.display='none'"><p class="img-caption">Naranja = portón de la casa · Negro = portón del barrio</p></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- MAPA DE RUTA ES -->
+  <section class="section" id="es-section-map" style="margin-bottom:0;">
+    <div class="section-header">
+      <span class="section-number">↓</span>
+      <h2 class="section-title">Tu Recorrido</h2>
+      <div class="section-line"></div>
+    </div>
+    <p style="font-size:14px; color:var(--muted); margin-bottom:20px; line-height:1.8;">Desde la Ruta C45 por la entrada del barrio y subiendo la loma hasta Quinta Sierras. Tocá cualquier marcador para más info.</p>
+    <div id="route-map-es" style="height:420px; border:1px solid var(--line); position:relative; z-index:1;"></div>
+    <div style="display:flex; gap:16px; margin-top:14px; flex-wrap:wrap;">
+      <span style="font-size:11px; color:var(--muted); letter-spacing:0.1em; display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#c8a96e;display:inline-block;"></span>1 — Shell &amp; De Compras</span>
+      <span style="font-size:11px; color:var(--muted); letter-spacing:0.1em; display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#c8a96e;display:inline-block;"></span>2 — Doblar en C45</span>
+      <span style="font-size:11px; color:var(--muted); letter-spacing:0.1em; display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#c8a96e;display:inline-block;"></span>3 — Doblar al barrio</span>
+      <span style="font-size:11px; color:var(--muted); letter-spacing:0.1em; display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#c8a96e;display:inline-block;"></span>4 — Entrada al Barrio</span>
+      <span style="font-size:11px; color:var(--muted); letter-spacing:0.1em; display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#c8a96e;display:inline-block;"></span>5 — Portón Automático</span>
+      <span style="font-size:11px; color:var(--muted); letter-spacing:0.1em; display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#3d5a3e;display:inline-block;"></span>6 — Quinta Sierras</span>
+    </div>
+    <div style="margin-top:18px;">
+      <a href="https://www.google.com/maps/dir/?api=1&destination=-31.4871111,-64.4596111" target="_blank" class="map-link" style="font-size:13px; padding-bottom:2px;">
+        🗺️ Cómo llegar a Quinta Sierras
+      </a>
+    </div>
+  </section>
+
+  <div class="divider"><span class="divider-symbol">✦</span></div>
+
+  <!-- LA CASA -->
+  <section class="section" id="es-section-2">
+    <div class="section-header">
+      <span class="section-number">02</span>
+      <h2 class="section-title">La Casa</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="info-grid">
+      <div class="info-card"><div class="info-card-icon">📶</div><p class="info-card-label">Red Wi-Fi</p><p class="info-card-value"><code>gstar mesh</code></p></div>
+      <div class="info-card"><div class="info-card-icon">🔑</div><p class="info-card-label">Contraseña Wi-Fi</p><p class="info-card-value"><code>garrett0405</code></p></div>
+      <div class="info-card"><div class="info-card-icon">💡</div><p class="info-card-label">Luces</p><p class="info-card-value">La mayoría son inteligentes — controlables desde Google Home</p></div>
+      <div class="info-card"><div class="info-card-icon">🚪</div><p class="info-card-label">Portones</p><p class="info-card-value">App Google Home o controles físicos dentro de la casa</p></div>
+    </div>
+    <br>
+    <div class="steps">
+      <div class="step">
+        <div class="step-left"><div class="step-dot"></div><div class="step-line"></div></div>
+        <div class="step-body">
+          <p class="step-label">Agua Caliente — Energía Solar</p>
+          <p class="step-text">El agua caliente funciona con energía solar. El <strong>controlador SR501</strong> está al lado de la lavadora.</p>
+          <div class="gate-img-container"><img src="IMG-20250712-WA0002.jpg" alt="Controlador SR501" onerror="this.parentElement.style.display='none'"><p class="img-caption">Controlador solar SR501 — al lado de la lavadora</p></div>
+          <p class="step-text">• <strong>Water Loading</strong> — presioná para llenar el tanque<br>• <strong>Heat</strong> — presioná si el agua no está caliente; esperá <strong>30–40 minutos</strong></p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-left"><div class="step-dot"></div><div class="step-line"></div></div>
+        <div class="step-body">
+          <p class="step-label">Agua Potable</p>
+          <p class="step-text">El agua de la canilla viene de nuestro <strong>propio pozo</strong> y es perfectamente potable.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-left"><div class="step-dot"></div><div class="step-line"></div></div>
+        <div class="step-body">
+          <p class="step-label">Pileta y Jardín</p>
+          <p class="step-text">El <strong>filtro de la pileta tiene temporizador</strong> y es automático. Los aspersores también — no hace falta tocar nada.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"><span class="divider-symbol">✦</span></div>
+
+  <!-- EXCURSIONES -->
+  <section class="section" id="es-section-3">
+    <div class="section-header">
+      <span class="section-number">03</span>
+      <h2 class="section-title">Excursiones</h2>
+      <div class="section-line"></div>
+    </div>
+    <p style="font-size:15px; color:var(--muted); margin-bottom:28px;">Algunos de nuestros lugares favoritos en las Sierras y alrededores.</p>
+    <div class="destinations">
+      <div class="dest-card">
+        <p class="dest-distance">Por la C45, arriba</p>
+        <h3 class="dest-name">Falda del Carmen</h3>
+        <p class="dest-desc">El almacén del pueblo es famoso por sus sándwiches. Desde aquí tomás el camino de las 100 curvas hasta el <strong>observatorio astronómico</strong>.<br><br>
+        <a href="https://maps.app.goo.gl/PZaEMGXY5eezzYwUA" target="_blank" class="map-link">📍 Falda del Carmen</a></p>
+      </div>
+      <div class="dest-card">
+        <p class="dest-distance">Al otro lado de la sierra</p>
+        <h3 class="dest-name">San Clemente</h3>
+        <p class="dest-desc">Bajá al otro lado y encontrás hermosos rincones del río para nadar.<br><br>
+        🍽️ <em>Amigos de San Clemente</em> hace empanadas excepcionales. Vale llamar antes.<br><strong>+54 9 3547 50-8502</strong><br><br>
+        <a href="https://maps.app.goo.gl/HMvb1W9pRYzBEKNy9" target="_blank" class="map-link">📍 Amigos de San Clemente</a><br>
+        <a href="https://maps.app.goo.gl/MokwYPx4YJ51Kkhq6" target="_blank" class="map-link">📍 Río — spot 1</a><br>
+        <a href="https://maps.app.goo.gl/DZuh1KrVgvUskm5Q7" target="_blank" class="map-link">📍 Río — spot 2</a></p>
+      </div>
+      <div class="dest-card">
+        <p class="dest-distance">Al sur, cerca</p>
+        <h3 class="dest-name">Alta Gracia</h3>
+        <p class="dest-desc">Hermosa ciudad colonial con una <strong>estancia jesuítica Patrimonio UNESCO</strong> — ideal para medio día.<br><br>
+        <a href="https://maps.app.goo.gl/MwhxJteziraqKVE36" target="_blank" class="map-link">📍 Alta Gracia</a></p>
+      </div>
+      <div class="dest-card">
+        <p class="dest-distance">En dirección contraria</p>
+        <h3 class="dest-name">Villa Carlos Paz</h3>
+        <p class="dest-desc">Animada ciudad a orillas del lago con <strong>costanera, restaurantes y cafés</strong>.<br><br>
+        <a href="https://maps.app.goo.gl/VtLcEBAsqpo9WfZaA" target="_blank" class="map-link">📍 Villa Carlos Paz</a></p>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"><span class="divider-symbol">✦</span></div>
+
+  <!-- COMERCIOS CERCANOS -->
+  <section class="section" id="es-section-4">
+    <div class="section-header">
+      <span class="section-number">04</span>
+      <h2 class="section-title">Comercios Cercanos</h2>
+      <div class="section-line"></div>
+    </div>
+    <p style="font-size:14px; color:var(--muted); margin-bottom:28px; line-height:1.8;">Todo lo que necesitás está a menos de 10 minutos en auto. Sobre la Ruta C45 hay una <strong>estación Shell</strong> y, justo al lado, un <strong>pequeño shopping</strong> con supermercado, carnicería, verdulería, panadería, vinoteca y deli, café, farmacia y pizzería.</p>
+    <div class="info-grid">
+      <div class="info-card"><div class="info-card-icon">🛒</div><p class="info-card-label">Supermercado</p><p class="info-card-value">Mercado en la Shell con carnicería, verdulería y panadería</p></div>
+      <div class="info-card"><div class="info-card-icon">🍷</div><p class="info-card-label">Vinoteca y Deli</p><p class="info-card-value">Vinoteca especializada con quesos y fiambres — mismo complejo</p></div>
+      <div class="info-card"><div class="info-card-icon">☕</div><p class="info-card-label">Café</p><p class="info-card-value">Andrea Café para café y sándwiches</p></div>
+      <div class="info-card"><div class="info-card-icon">🍕</div><p class="info-card-label">Pizza y más</p><p class="info-card-value">Pizzería y otras opciones en el mismo shopping</p></div>
+      <div class="info-card"><div class="info-card-icon">💊</div><p class="info-card-label">Farmacia</p><p class="info-card-value">Disponible en el complejo Shell</p></div>
+      <div class="info-card"><div class="info-card-icon">⛽</div><p class="info-card-label">Nafta</p><p class="info-card-value">Estación Shell en Ruta C45</p></div>
+      <div class="info-card"><div class="info-card-icon">🚗</div><p class="info-card-label">Taxi / Remis</p><p class="info-card-value">Uber funciona en la zona. Recordá abrir los portones para tu chofer.</p></div>
+    </div>
+  </section>
+
+  <div class="divider"><span class="divider-symbol">✦</span></div>
+
+  <!-- NORMAS DE LA CASA -->
+  <section class="section" id="es-section-5">
+    <div class="section-header">
+      <span class="section-number">05</span>
+      <h2 class="section-title">Normas de la Casa</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="step-left"><div class="step-dot"></div><div class="step-line"></div></div><div class="step-body"><p class="step-label">Silencio Nocturno</p><p class="step-text">El barrio tiene horario de silencio de <strong>23 hs a 7 hs</strong>. Por favor tené en cuenta a los vecinos.</p></div></div>
+      <div class="step"><div class="step-left"><div class="step-dot"></div><div class="step-line"></div></div><div class="step-body"><p class="step-label">Huéspedes y Capacidad</p><p class="step-text">Máximo <strong>4 huéspedes</strong>. No se permiten visitas adicionales.</p></div></div>
+      <div class="step"><div class="step-left"><div class="step-dot"></div><div class="step-line"></div></div><div class="step-body"><p class="step-label">Fumar</p><p class="step-text"><strong>Solo en exteriores.</strong> Por favor no dejar colillas en la propiedad.</p></div></div>
+      <div class="step"><div class="step-left"><div class="step-dot"></div><div class="step-line"></div></div><div class="step-body"><p class="step-label">Mascotas</p><p class="step-text">Bienvenidas <strong>con acuerdo previo solamente</strong>. Contactanos antes.</p></div></div>
+      <div class="step"><div class="step-left"><div class="step-dot"></div><div class="step-line"></div></div><div class="step-body"><p class="step-label">🔥 Prohibido Hacer Fuego al Aire Libre</p><p class="step-text">Estamos en una <strong>zona de riesgo de incendio</strong>. Los fuegos al aire libre están estrictamente prohibidos. La parrilla a gas está disponible.</p></div></div>
+      <div class="step"><div class="step-left"><div class="step-dot"></div><div class="step-line"></div></div><div class="step-body"><p class="step-label">Pileta</p><p class="step-text">La pileta se limpia antes de tu llegada. Es normal que se acumule algo de polvo — avisanos si está muy sucia.</p></div></div>
+      <div class="step"><div class="step-left"><div class="step-dot"></div><div class="step-line"></div></div><div class="step-body"><p class="step-label">🗑️ Residuos</p><p class="step-text">Llevá la basura a los <strong>contenedores verdes sobre la ruta fuera del barrio</strong> — en la comisaría o el dispensario sobre el camino al barrio. Por favor hacelo antes del check-out.</p></div></div>
+    </div>
+  </section>
+
+  <div class="divider"><span class="divider-symbol">✦</span></div>
+
+  <!-- TELÉFONOS DE EMERGENCIA -->
+  <section class="section" id="es-section-6">
+    <div class="section-header">
+      <span class="section-number">06</span>
+      <h2 class="section-title">Teléfonos de Emergencia</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="emergency-list">
+      <div class="emergency-row"><span class="emergency-label">Emergencias</span><span class="emergency-number">911</span></div>
+      <div class="emergency-row"><span class="emergency-label">Policía — Córdoba</span><span class="emergency-number">101</span></div>
+      <div class="emergency-row"><span class="emergency-label">Emergencia Médica</span><span class="emergency-number">107</span></div>
+      <div class="emergency-row"><span class="emergency-label">Bomberos</span><span class="emergency-number">100</span></div>
+    </div>
+    <div class="callout" style="margin-top:24px;">
+      <strong>📱 Contactá a tu anfitrión</strong>
+      Para consultas no urgentes, escribinos por WhatsApp y te respondemos a la brevedad.
+    </div>
+  </section>
+
+  <div class="divider"><span class="divider-symbol">✦</span></div>
+
+</main>
+
+<!-- FOOTER ES -->
+<footer class="footer" id="es-section-7">
+  <div class="footer-rule"></div>
+  <p class="footer-title">Disfrutá las vistas y los pájaros</p>
+  <p>Esperamos que tengas una estadía maravillosa en Quinta Sierras.<br>No dudes en escribirnos si necesitás algo.</p>
+  <br>
+  <a href="https://wa.me/543518749830" target="_blank" class="whatsapp-btn">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+    Escribinos por WhatsApp
+  </a>
+  <p class="footer-sub">Quinta Sierras · Barrio Paso de Piedra · Córdoba</p>
+</footer>
+
+</div><!-- /lang-es -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
