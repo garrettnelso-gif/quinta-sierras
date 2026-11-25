@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quinta Sierras — Arrival Guide</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -812,6 +813,25 @@
     </div>
   </section>
 
+  <!-- ROUTE MAP -->
+  <section class="section" id="section-map" style="margin-bottom:0;">
+    <div class="section-header">
+      <span class="section-number">↓</span>
+      <h2 class="section-title">Your Route</h2>
+      <div class="section-line"></div>
+    </div>
+    <p style="font-size:14px; color:var(--muted); margin-bottom:20px; line-height:1.8;">From Ruta C45 through the barrio entrance and up the hill to Quinta Sierras. Tap any marker for details.</p>
+    <div id="route-map" style="height:420px; border:1px solid var(--line); position:relative; z-index:1;"></div>
+    <div style="display:flex; gap:16px; margin-top:14px; flex-wrap:wrap;">
+      <span style="font-size:11px; color:var(--muted); letter-spacing:0.1em; display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#c8a96e;display:inline-block;"></span>1 — Shell &amp; Shopping</span>
+      <span style="font-size:11px; color:var(--muted); letter-spacing:0.1em; display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#c8a96e;display:inline-block;"></span>2 — Turn off C45</span>
+      <span style="font-size:11px; color:var(--muted); letter-spacing:0.1em; display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#c8a96e;display:inline-block;"></span>3 — Left to barrio</span>
+      <span style="font-size:11px; color:var(--muted); letter-spacing:0.1em; display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#c8a96e;display:inline-block;"></span>4 — Barrio Entrance</span>
+      <span style="font-size:11px; color:var(--muted); letter-spacing:0.1em; display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#c8a96e;display:inline-block;"></span>5 — Automatic Gate</span>
+      <span style="font-size:11px; color:var(--muted); letter-spacing:0.1em; display:flex; align-items:center; gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#3d5a3e;display:inline-block;"></span>6 — Quinta Sierras</span>
+    </div>
+  </section>
+
   <div class="divider"><span class="divider-symbol">✦</span></div>
 
   <!-- HOUSE SYSTEMS -->
@@ -1170,6 +1190,103 @@
       }
     });
   });
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+  // Route map — full driving route from C45 to Quinta Sierras
+  (function() {
+    var container = document.getElementById('route-map');
+    if (!container) return;
+
+    var map = L.map('route-map', {
+      center: [-31.480, -64.443],
+      zoom: 13,
+      zoomControl: true,
+      scrollWheelZoom: false
+    });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '© OpenStreetMap © CARTO',
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(map);
+
+    function makeIcon(color, num) {
+      return L.divIcon({
+        className: '',
+        html: '<div style="width:28px;height:28px;border-radius:50%;background:' + color + ';border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-family:Jost,sans-serif;font-size:11px;font-weight:400;color:white;">' + num + '</div>',
+        iconSize: [28, 28], iconAnchor: [14, 14], popupAnchor: [0, -16]
+      });
+    }
+
+    var waypoints = [
+      { lat: -31.464961, lng: -64.426740, label: 'Shell Station & Shopping', note: 'Petrol, supermarket, bakery, deli, pharmacy — all here on Ruta C45.', num: '1', color: '#c8a96e' },
+      { lat: -31.495321, lng: -64.439902, label: 'Turn off Ruta C45', note: 'Turn here off Ruta C45 toward Barrio Paso de Piedra.', num: '2', color: '#c8a96e' },
+      { lat: -31.490955, lng: -64.442924, label: 'Left turn to barrio', note: 'Take the left here toward the barrio entrance.', num: '3', color: '#c8a96e' },
+      { lat: -31.490671, lng: -64.453099, label: 'Paso de Piedra Entrance', note: 'The stone arch entrance — drive straight through, not gated.', num: '4', color: '#c8a96e' },
+      { lat: -31.488448, lng: -64.453130, label: 'Automatic Gate', note: 'Open via Google Home ("Neighborhood Gate") or the black remote.', num: '5', color: '#c8a96e' },
+      { lat: -31.487111, lng: -64.459611, label: 'Quinta Sierras', note: 'Continue up the hill — do not turn left. Black charred wood gate on the left.', num: '6', color: '#3d5a3e' }
+    ];
+
+    waypoints.forEach(function(wp) {
+      L.marker([wp.lat, wp.lng], { icon: makeIcon(wp.color, wp.num) })
+        .addTo(map)
+        .bindPopup('<strong style="font-family:Cormorant Garamond,serif;font-size:15px;font-weight:400;">' + wp.label + '</strong><br><span style="font-size:12px;color:#7a7468;font-family:Jost,sans-serif;">' + wp.note + '</span>', { maxWidth: 220 });
+    });
+
+    // Road-following route via OSRM
+    var routeCoords = [];
+    var dot = null;
+    var animStep = 0;
+    var animating = false;
+
+    var coordStr = waypoints.map(function(w) { return w.lng + ',' + w.lat; }).join(';');
+    var osrmUrl = 'https://router.project-osrm.org/route/v1/driving/' + coordStr + '?overview=full&geometries=geojson';
+
+    fetch(osrmUrl)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var geom = data.routes[0].geometry;
+        L.geoJSON(geom, {
+          style: { color: '#c8a96e', weight: 3.5, opacity: 0.9, dashArray: '7, 9' }
+        }).addTo(map);
+        map.fitBounds(L.geoJSON(geom).getBounds(), { padding: [36, 36] });
+        routeCoords = geom.coordinates.map(function(c) { return [c[1], c[0]]; });
+        dot = L.circleMarker(routeCoords[0], {
+          radius: 7, fillColor: '#3d5a3e', color: 'white', weight: 2, fillOpacity: 1
+        }).addTo(map);
+      })
+      .catch(function() {
+        // Fallback straight-line polyline
+        L.polyline(waypoints.map(function(w) { return [w.lat, w.lng]; }), {
+          color: '#c8a96e', weight: 3, opacity: 0.85, dashArray: '6,8'
+        }).addTo(map);
+      });
+
+    function animateDot() {
+      if (!dot || routeCoords.length === 0) return;
+      dot.setLatLng(routeCoords[animStep]);
+      animStep++;
+      if (animStep < routeCoords.length) {
+        setTimeout(animateDot, 25);
+      } else {
+        animStep = 0;
+        setTimeout(animateDot, 1800);
+      }
+    }
+
+    var mapObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting && !animating) {
+          animating = true;
+          setTimeout(function() { animStep = 0; animateDot(); }, 600);
+          mapObserver.disconnect();
+        }
+      });
+    }, { threshold: 0.3 });
+    mapObserver.observe(container);
+  })();
 </script>
 
 </body>
