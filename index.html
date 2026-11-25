@@ -1239,6 +1239,27 @@
     var dot = null;
     var animStep = 0;
     var animating = false;
+    var sectionVisible = false;
+
+    function animateDot() {
+      if (!dot || routeCoords.length === 0) return;
+      dot.setLatLng(routeCoords[animStep]);
+      animStep++;
+      if (animStep < routeCoords.length) {
+        setTimeout(animateDot, 25);
+      } else {
+        animStep = 0;
+        setTimeout(animateDot, 1800);
+      }
+    }
+
+    function startAnimWhenReady() {
+      if (dot && routeCoords.length > 0 && sectionVisible && !animating) {
+        animating = true;
+        animStep = 0;
+        setTimeout(animateDot, 600);
+      }
+    }
 
     var coordStr = waypoints.map(function(w) { return w.lng + ',' + w.lat; }).join(';');
     var osrmUrl = 'https://router.project-osrm.org/route/v1/driving/' + coordStr + '?overview=full&geometries=geojson';
@@ -1255,31 +1276,24 @@
         dot = L.circleMarker(routeCoords[0], {
           radius: 7, fillColor: '#3d5a3e', color: 'white', weight: 2, fillOpacity: 1
         }).addTo(map);
+        startAnimWhenReady();
       })
       .catch(function() {
-        // Fallback straight-line polyline
-        L.polyline(waypoints.map(function(w) { return [w.lat, w.lng]; }), {
-          color: '#c8a96e', weight: 3, opacity: 0.85, dashArray: '6,8'
+        // Fallback: straight-line polyline using waypoint coords
+        var pts = waypoints.map(function(w) { return [w.lat, w.lng]; });
+        L.polyline(pts, { color: '#c8a96e', weight: 3, opacity: 0.85, dashArray: '6,8' }).addTo(map);
+        routeCoords = pts;
+        dot = L.circleMarker(routeCoords[0], {
+          radius: 7, fillColor: '#3d5a3e', color: 'white', weight: 2, fillOpacity: 1
         }).addTo(map);
+        startAnimWhenReady();
       });
-
-    function animateDot() {
-      if (!dot || routeCoords.length === 0) return;
-      dot.setLatLng(routeCoords[animStep]);
-      animStep++;
-      if (animStep < routeCoords.length) {
-        setTimeout(animateDot, 25);
-      } else {
-        animStep = 0;
-        setTimeout(animateDot, 1800);
-      }
-    }
 
     var mapObserver = new IntersectionObserver(function(entries) {
       entries.forEach(function(e) {
-        if (e.isIntersecting && !animating) {
-          animating = true;
-          setTimeout(function() { animStep = 0; animateDot(); }, 600);
+        if (e.isIntersecting && !sectionVisible) {
+          sectionVisible = true;
+          startAnimWhenReady();
           mapObserver.disconnect();
         }
       });
